@@ -2,6 +2,7 @@
   * OSRAM Gardenspot Mini RGB
   *
   *
+  * Version 1.0.2 - Added support for toggle, setFlash, setBreath. - 10/14/2016
   * Version 1.0.1 - Added command for randomHue to be called by CoRE. - 10/13/2016
   * Version 1.0.0 - Initial Release - 10/13/2016
   *
@@ -40,8 +41,17 @@ metadata {
         attribute "hue", "number"
         attribute "saturation", "number"
         attribute "hueLoop", "string"
+        attribute "loopSpeed", "number"
+        attribute "breathe", "string"
+        attribute "flash", "string"
         
         command "randomHue"
+        command "setHueLoop"
+        command "setFlash"
+        command "setBreathe"
+        command "toggle"
+        command "setLevel", ["number"]
+        command "setLevel", ["number", "number"]
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenspot RGB"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Gardenspot RGB"
@@ -111,9 +121,24 @@ metadata {
         standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", height: 3, width: 3) {
 			state "default", label:"", action:"refresh.refresh", icon: "st.secondary.refresh"
 		}
+        
+        standardTile("hueLoop", "device.hueLoop", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+        	state "on", label: 'Hue Loop On', action: "setHueLoop", backgroundColor: "#ab1552", nextState: "off"
+			state "off", label:'Hue Loop Off', action: "setHueLoop", backgroundColor: "#ffffff", nextState: "on"
+        }
+        
+        standardTile("breathe", "device.breathe", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+        	state "on", label: 'Breathe On', action: "setBreathe", backgroundColor: "#ab1552", nextState: "off"
+			state "off", label:'Breathe Off', action: "setBreathe", backgroundColor: "#ffffff", nextState: "on"
+        }
+        
+        standardTile("flash", "device.flash", height: 2, width: 2, inactiveLabel: false, decoration: "flat") {
+        	state "on", label: 'Flash On', action: "setFlash", backgroundColor: "#ab1552", nextState: "off"
+			state "off", label:'Flash Off', action: "setFlash", backgroundColor: "#ffffff", nextState: "on"
+        }
 
         main(["switch"])
-        details(["switchDetails", "Brightness", "levelSliderControl", "Hue", "hueSliderControl", "Saturation", "satSliderControl", "rgbSelector", "refresh"])
+        details(["switchDetails", "Brightness", "levelSliderControl", "Hue", "hueSliderControl", "Saturation", "satSliderControl", "rgbSelector", "refresh", "hueLoop", "flash", "breathe"])
     }
 }
 
@@ -292,9 +317,10 @@ def setLevel(level) {
 }
 
 def setLevel(level, duration) {
+	log("setLevel(${level}) with duration(${duration}).", "DEBUG")
     sendEvent(name: "level", value: brightness)
     sendEvent(name: "switch", value: "on")
-    zigbee.setLevel(brightness, duration * 10)
+    zigbee.setLevel(brightness, duration * 100)
 }
 
 def setColor(value) {
@@ -320,6 +346,48 @@ def randomHue() {
 	setHue(rHue)
 }
 
+def setHueLoop() {
+	if(device.currentValue("hueLoop") == "off") {
+    	log("Turning Hue Loop On.", "INFO")
+        setDoHueLoop(true)
+        sendEvent(name: "hueLoop", value: "on", displayed:true, isStateChange: true)
+    } else {
+    	log("Turning Hue Loop Off.", "INFO")
+        setDoHueLoop(false)
+        sendEvent(name: "hueLoop", value: "off", displayed:true, isStateChange: true)
+    }
+}
+
+def setFlash() {
+	if(device.currentValue("flash") == "off") {
+    	log("Turning Flash Loop On.", "INFO")
+        sendEvent(name: "flash", value: "on", displayed:true, isStateChange: true)
+    } else {
+    	log("Turning Flash Loop Off.", "INFO")
+        sendEvent(name: "flash", value: "off", displayed:true, isStateChange: true)
+    }
+}
+
+def setBreathe() {
+	if(device.currentValue("breathe") == "off") {
+    	log("Turning Breathe Loop On.", "INFO")
+        sendEvent(name: "breathe", value: "on", displayed:true, isStateChange: true)
+    } else {
+    	log("Turning Breathe Loop Off.", "INFO")
+        sendEvent(name: "breathe", value: "off", displayed:true, isStateChange: true)
+    }
+}
+
+def toggle() {
+	if(device.currentValue("switch") == "off") {
+    	on()
+    } else {
+    	off()
+    }
+}
+
+//---------------------------
+
 def getNextStateVersion() {
 	return 1
 }
@@ -342,4 +410,16 @@ def getStateVersionString() {
 
 def isConfigured() {
 	return state.configured
+}
+
+def shouldHueLoop() {
+	if(state.doHueLoop == null) {
+    	return false
+    } else {
+    	return state.doHueLoop
+    }
+}
+
+def setDoHueLoop(val) {
+	state.doHueLoop = val
 }
