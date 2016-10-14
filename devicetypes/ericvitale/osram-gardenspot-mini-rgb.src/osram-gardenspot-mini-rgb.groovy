@@ -2,7 +2,8 @@
   * OSRAM Gardenspot Mini RGB
   *
   *
-  * Version 1.0 - Initial Release - 10/13/2016
+  * Version 1.0.1 - Added command for randomHue to be called by CoRE. - 10/13/2016
+  * Version 1.0.0 - Initial Release - 10/13/2016
   *
   * Licensed under the Apache License, Version 2.0 (the "License"); you may not
   * use this file except in compliance with the License. You may obtain a copy
@@ -22,7 +23,7 @@
   *
 **/
 
-def getVersion() { return "1.0.0" }
+def getVersion() { return "1.0.1" }
 
 metadata {
 	definition (name: "OSRAM GardenSpot Mini RGB", namespace: "ericvitale", author: "ericvitale@gmail.com") {
@@ -40,7 +41,7 @@ metadata {
         attribute "saturation", "number"
         attribute "hueLoop", "string"
         
-        command "setHueLoop"
+        command "randomHue"
 
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "Gardenspot RGB"
 		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,0300,0B04,FC0F", outClusters: "0019", manufacturer: "OSRAM", model: "LIGHTIFY Gardenspot RGB"
@@ -311,6 +312,12 @@ def setHue(value) {
 def setSaturation(value) {
     def val = zigbee.convertToHexString(Math.round(value * 0xfe / 100.0), 2)
     zigbee.command(COLOR_CONTROL_CLUSTER, 0x03, val, "0500")
+}
+
+def randomHue() {
+	def rHue = new Random().nextInt(100) + 1
+    log("Random Hue is ${rHue}.", "DEBUG")
+	setHue(rHue)
 }
 
 def getNextStateVersion() {
